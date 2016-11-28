@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 )
 
 // Graph represents a set of connected nodes with a root.
@@ -56,31 +57,32 @@ func (g *Graph) validate() error {
 // BFS implements the Breadth-first search algorithm.
 // See https://en.wikipedia.org/wiki/Breadth-first_search
 func (g *Graph) BFS() map[int]int {
-	distance := make(map[int]int)
+	var wg sync.WaitGroup
 
-	done := make(chan bool)
+	distance := make(map[int]int)
 	queue := make(chan int, len(g.Nodes))
 	distance[g.Root] = 0
+
+	wg.Add(1)
 	go func() {
 		for {
-			select {
-			case node := <-queue:
-				for _, neighbor := range g.Nodes[node] {
-					_, prs := distance[neighbor]
-					if !prs {
-						distance[neighbor] = distance[node] + 1 // Can add edge weight if using a weighted graph
-						queue <- neighbor
-					}
+			node := <-queue
+			for _, neighbor := range g.Nodes[node] {
+				_, prs := distance[neighbor]
+				if !prs {
+					distance[neighbor] = distance[node] + 1 // Can add edge weight if using a weighted graph
+					queue <- neighbor
+					wg.Add(1)
 				}
-			default:
-				done <- true
 			}
+
+			wg.Done()
 		}
 	}()
 
 	queue <- g.Root
 
-	<-done
+	wg.Wait()
 
 	return distance
 }
