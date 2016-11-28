@@ -47,24 +47,26 @@ func (g *Graph) validate() error {
 
 // BFS implements the Breadth-first search algorithm.
 // See https://en.wikipedia.org/wiki/Breadth-first_search
-func (g *Graph) BFS(nodes []int, dist map[int]int) map[int]int {
-	var next []int
-	if len(nodes) == 0 {
-		return dist
-	}
-	if dist == nil {
-		dist = make(map[int]int)
-	}
-	for _, node := range nodes {
+func (g *Graph) BFS() map[int]int {
+	dist := make(map[int]int)
+	nodes := make([]int, 0, len(g.Nodes))
+
+	dist[g.Root] = 0
+	nodes = append(nodes, g.Root)
+
+	// We go through nodes while adding node.
+	for i := 0; i < len(nodes); i++ {
+		node := nodes[i]
 		for _, neighbor := range g.Nodes[node] {
 			_, ok := dist[neighbor]
 			if !ok {
 				dist[neighbor] = dist[node] + 1 // Can add edge weight if using a weighted graph
-				next = append(next, neighbor)
+				nodes = append(nodes, neighbor)
 			}
 		}
 	}
-	return g.BFS(next, dist)
+
+	return dist
 }
 
 func fatalErr(err error, format string, a ...interface{}) {
@@ -83,7 +85,6 @@ func main() {
 	fatalErr(err, "fail to read graph.json: %v\n", err)
 	fmt.Printf("Graph: %+v\n", graph)
 
-	dist := graph.BFS([]int{0}, nil)
-	dist[graph.Root] = 0
+	dist := graph.BFS()
 	fmt.Println("Distances: ", dist)
 }
