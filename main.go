@@ -8,9 +8,6 @@ import (
 	"os"
 )
 
-// Distance represents the distance between nodes in a graph.
-type Distance map[int]int
-
 // Graph represents a set of connected nodes with a root.
 type Graph struct {
 	Root  int     `json:"root"`
@@ -18,16 +15,8 @@ type Graph struct {
 }
 
 // NewGraph creates a new Graph using an io.Reader.
-// It expects the reader to contains a json with the fields :
-//     {
-//         root: 0,
-//         nodes: [
-//             [1 3],
-//             [2],
-//             [3],
-//             [4]
-//         ]
-//     }
+// It expects the reader to contains a json in the form :
+// { root: 0, nodes: [[1 3],[2],[3],[4]] }
 func NewGraph(r io.Reader) (*Graph, error) {
 	g := &Graph{}
 	d := json.NewDecoder(r)
@@ -58,24 +47,24 @@ func (g *Graph) validate() error {
 
 // BFS implements the Breadth-first search algorithm.
 // See https://en.wikipedia.org/wiki/Breadth-first_search
-func (g *Graph) BFS(nodes []int, d Distance) Distance {
+func (g *Graph) BFS(nodes []int, dist map[int]int) map[int]int {
 	var next []int
 	if len(nodes) == 0 {
-		return d
+		return dist
 	}
-	if d == nil {
-		d = make(Distance)
+	if dist == nil {
+		dist = make(map[int]int)
 	}
 	for _, node := range nodes {
 		for _, neighbor := range g.Nodes[node] {
-			_, ok := d[neighbor]
+			_, ok := dist[neighbor]
 			if !ok {
-				d[neighbor] = d[node] + 1 // Can add edge weight if using a weighted graph
+				dist[neighbor] = dist[node] + 1 // Can add edge weight if using a weighted graph
 				next = append(next, neighbor)
 			}
 		}
 	}
-	return g.BFS(next, d)
+	return g.BFS(next, dist)
 }
 
 func fatalErr(err error, format string, a ...interface{}) {
